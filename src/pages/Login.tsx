@@ -9,13 +9,17 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleGoogleLogin = async () => {
-    await loginWithGoogle('buyer');
-    navigate('/dashboard/buyer');
+    const success = await loginWithGoogle('buyer');
+    if (success) {
+      navigate('/dashboard/buyer');
+    }
   };
 
   const handleDealerLogin = async () => {
-    await loginWithGoogle('dealer');
-    navigate('/dashboard/dealer');
+    const success = await loginWithGoogle('dealer');
+    if (success) {
+      navigate('/dashboard/dealer');
+    }
   };
 
   return (

@@ -89,16 +89,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const loginWithGoogle = async (role: 'buyer' | 'seller' | 'dealer' | 'admin' = 'buyer') => {
+  const loginWithGoogle = async (role: 'buyer' | 'seller' | 'dealer' | 'admin' = 'buyer'): Promise<boolean> => {
     setIsLoading(true);
     intendedRole = role;
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
+      return true;
     } catch (error) {
       console.error('Google Sign-In Error:', error);
       intendedRole = null;
       setIsLoading(false);
+      return false;
     }
   };
 

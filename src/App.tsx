@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { CarProvider } from './context/CarContext';
 import { ChatProvider } from './context/ChatContext';
-import { verifyFirestoreConnectivity } from './lib/verifyConnectivity';
+// import { verifyFirestoreConnectivity } from './lib/verifyConnectivity';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AboutUs from './pages/AboutUs';
@@ -40,7 +40,7 @@ import AdminDashboard from './pages/dashboard/AdminDashboard';
 
 export default function App() {
   useEffect(() => {
-    verifyFirestoreConnectivity();
+    // verifyFirestoreConnectivity();
   }, []);
 
   return (
