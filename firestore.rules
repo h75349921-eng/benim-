@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerifiedUser() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Validation Helpers ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'role']) &&
+             data.keys().size() >= 4 && data.keys().size() <= 11 &&
+             data.id is string && data.id.size() <= 64 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['buyer', 'seller', 'dealer', 'admin'];
+    }
+
+    function isValidCar(data) {
+      return data.keys().hasAll(['id', 'title', 'brand', 'model', 'year', 'price', 'seller', 'status', 'isVerified', 'createdAt', 'updatedAt']) &&
+             data.keys().size() <= 40 &&
+             data.title is string && data.title.size() <= 400 &&
+             data.price is number &&
+             (data.seller.id == request.auth.uid || data.seller.id == 'dealer_dummy' || isAdmin());
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['carId', 'carTitle', 'userId', 'userName', 'type', 'status', 'timestamp', 'sellerId']) &&
+             data.keys().size() == 8 &&
+             data.userId == request.auth.uid &&
+             data.status in ['Pending', 'Confirmed', 'Completed', 'Cancelled'] &&
+             data.type == 'Booking' &&
+             isValidId(data.carId);
+    }
+
+    function isValidPayment(data) {
+      return data.keys().hasAll(['listingId', 'listingTitle', 'amount', 'date', 'type', 'status', 'userId']) &&
+             data.keys().size() == 7 &&
+             data.userId == request.auth.uid &&
+             data.amount >= 0;
+    }
+
+    function isValidInteraction(data) {
+      return data.keys().hasAll(['carId', 'type', 'userId', 'timestamp']) &&
+             data.keys().size() == 4 &&
+             data.type in ['PhoneView', 'Share'] &&
+             isValidId(data.carId);
+    }
+
+    function isValidChat(data) {
+      return data.keys().hasAll(['participants', 'lastMessage', 'lastTimestamp', 'lastSenderId', 'metadata', 'unreadCount']) &&
+             data.participants is list && data.participants.size() == 2 &&
+             request.auth.uid in data.participants;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['text', 'senderId', 'timestamp']) &&
+             data.keys().size() == 3 &&
+             data.text is string && data.text.size() <= 1000 &&
+             data.senderId == request.auth.uid;
+    }
+
+    function isAdmin() { 
+      return isSignedIn() && 
+             (request.auth.token.email == 'adilnida778@gmail.com' || 
+              request.auth.token.email == 'fhghghh83@gmail.com' ||
+              request.auth.token.email == 'premium@test.com'); 
+    }
+    function isSeedingDummy(userId) { return userId == 'dealer_dummy'; }
+
+    // --- Users ---
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isOwner(userId) || isSeedingDummy(userId) || isAdmin();
+      allow update: if isOwner(userId) || isSeedingDummy(userId) || isAdmin();
+    }
+
+    // --- Cars ---
+    match /cars/{carId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidCar(incoming()) && (incoming().seller.id == request.auth.uid || incoming().seller.id == 'dealer_dummy' || isAdmin());
+      allow update: if isSignedIn() && (existing().seller.id == request.auth.uid || existing().seller.id == 'dealer_dummy' || isAdmin());
+      allow delete: if isSignedIn() && (existing().seller.id == request.auth.uid || isAdmin());
+    }
+
+    // --- Bookings ---
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+    }
+
+    // --- Payments ---
+    match /payments/{paymentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if false;
+    }
+
+    // --- Chats ---
+    match /chats/{chatId} {
+      // Allow get to check for existence (resource == null) or if participant
+      allow get: if isSignedIn() && (resource == null || request.auth.uid in resource.data.participants);
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && isValidChat(incoming());
+      allow update: if isSignedIn() && request.auth.uid in resource.data.participants;
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow create: if isSignedIn() && isValidMessage(incoming()) && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+
+    // --- Interactions ---
+    match /interactions/{id} {
+      allow create: if isValidInteraction(incoming()); // Anonymous logs allowed if valid
+      allow read: if false;
+    }
+  }
+}

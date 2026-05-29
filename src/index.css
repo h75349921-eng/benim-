@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-brand-blue: #E0F2FE;
+  --color-brand-purple: #F3E8FF;
+  --color-brand-pink: #FCE7F3;
+  --color-brand-peach: #FFEDD5;
+  --color-brand-yellow: #FEF9C3;
+  
+  --color-primary-500: #8B5CF6; /* Vibrant pastel purple */
+  --color-secondary-500: #3B82F6; /* Vibrant pastel blue */
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .btn-pastel-blue {
+    @apply bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors;
+  }
+  .btn-pastel-purple {
+    @apply bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors;
+  }
+  .card-pastel {
+    @apply bg-white border border-slate-100 shadow-sm rounded-2xl p-4;
+  }
+}
+

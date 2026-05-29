@@ -1,0 +1,169 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["buyer", "seller", "dealer"] },
+        "avatar": { "type": "string" },
+        "phone": { "type": "string" },
+        "favorites": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Car": {
+      "title": "Car",
+      "description": "Car listing information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "brand": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "number" },
+        "price": { "type": "number" },
+        "mileage": { "type": "number" },
+        "location": { "type": "string" },
+        "fuelType": { "type": "string", "enum": ["Petrol", "Diesel", "Electric", "Hybrid"] },
+        "transmission": { "type": "string", "enum": ["Manual", "Automatic"] },
+        "status": { "type": "string", "enum": ["Standard", "Verified", "Prime"] },
+        "isVerified": { "type": "boolean" },
+        "isPremium": { "type": "boolean" },
+        "premiumUntil": { "type": "string", "format": "date-time" },
+        "ownerType": { "type": "string", "enum": ["First Owner", "Second Hand", "Third Owner"] },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "specs": { "type": "object" },
+        "seller": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "brand", "model", "year", "price", "seller"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment transaction history",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "listingId": { "type": "string" },
+        "listingTitle": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["Boost", "Featured", "Premium"] },
+        "status": { "type": "string", "enum": ["Completed", "Pending"] },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "listingId", "amount", "userId", "date"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Buyer inquiries on listings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "carId": { "type": "string" },
+        "carTitle": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "carId", "buyerId", "message", "timestamp"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Vehicle booking records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "carId": { "type": "string" },
+        "carTitle": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "type": { "type": "string", "enum": ["Booking"] },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Completed", "Cancelled"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "sellerId": { "type": "string" }
+      },
+      "required": ["carId", "userId", "sellerId", "status"]
+    },
+    "Interaction": {
+      "title": "Interaction",
+      "description": "User interaction logs",
+      "type": "object",
+      "properties": {
+        "carId": { "type": "string" },
+        "type": { "type": "string", "enum": ["PhoneView", "Share"] },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["carId", "type", "timestamp"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Conversation between two users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastTimestamp": { "type": "string", "format": "date-time" },
+        "lastSenderId": { "type": "string" },
+        "unreadCount": { "type": "object" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["participants", "lastMessage"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Individual message in a chat",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "senderId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "cars/{carId}": {
+      "schema": "Car",
+      "description": "Car listings"
+    },
+    "payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Payment history"
+    },
+    "inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "User inquiries"
+    },
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Vehicle bookings"
+    },
+    "interactions/{interactionId}": {
+      "schema": "Interaction",
+      "description": "Interaction logs"
+    },
+    "chats/{chatId}": {
+      "schema": "Chat",
+      "description": "User chats"
+    },
+    "chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat messages"
+    }
+  }
+}
