@@ -33,7 +33,7 @@ export default function Browse() {
   const verifiedOnly = searchParams.get('verified') === 'true';
   const minPrice = Number(searchParams.get('minPrice')) || 0;
   const maxPrice = Number(searchParams.get('maxPrice')) || 50000000;
-  const maxMileage = Number(searchParams.get('mileage')) || 300000;
+  const maxKmDriven = Number(searchParams.get('kmDriven')) || 300000;
   const yearFilter = searchParams.get('year') || '';
 
   const updateFilters = (key: string, value: string) => {
@@ -65,11 +65,11 @@ export default function Browse() {
       const matchesOwners = !ownersFilter || car.ownerType === ownersFilter;
       const matchesVerified = !verifiedOnly || car.isVerified === true;
       const matchesPrice = (car.price || 0) >= minPrice && (car.price || 0) <= maxPrice;
-      const matchesMileage = (car.mileage || 0) <= maxMileage;
+      const matchesKmDriven = (car.kmDriven || 0) <= maxKmDriven;
       const matchesYear = !yearFilter || (car.year || '').toString() === yearFilter;
       
       return matchesSearch && matchesFuel && matchesTrans && matchesPrice && matchesLoc && 
-             matchesBrand && matchesOwners && matchesVerified && matchesMileage && matchesYear;
+             matchesBrand && matchesOwners && matchesVerified && matchesKmDriven && matchesYear;
     });
 
     // Sorting Logic
@@ -90,7 +90,7 @@ export default function Browse() {
         default: return 0;
       }
     });
-  }, [cars, query, fuelFilter, transFilter, minPrice, maxPrice, locationFilter, brandFilter, ownersFilter, verifiedOnly, maxMileage, yearFilter, sortBy]);
+  }, [cars, query, fuelFilter, transFilter, minPrice, maxPrice, locationFilter, brandFilter, ownersFilter, verifiedOnly, maxKmDriven, yearFilter, sortBy]);
 
   if (isLoading) {
     return <div className="max-w-7xl mx-auto px-4 py-8 text-center font-black">Finding best deals...</div>;
@@ -278,15 +278,15 @@ export default function Browse() {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">KM Driven (Max)</label>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-slate-900">0 km</span>
-                  <span className="text-xs font-bold text-primary-500">{maxMileage.toLocaleString()} km</span>
+                  <span className="text-xs font-bold text-primary-500">{maxKmDriven.toLocaleString()} km</span>
                 </div>
                 <input
                   type="range"
                   min="0"
                   max="300000"
                   step="10000"
-                  value={maxMileage}
-                  onChange={(e) => updateFilters('mileage', e.target.value)}
+                  value={maxKmDriven}
+                  onChange={(e) => updateFilters('kmDriven', e.target.value)}
                   className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-500"
                 />
               </div>

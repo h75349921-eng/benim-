@@ -54,7 +54,7 @@ export default function MyListings() {
           {myCars.map((car) => {
             const isEligibleForFreeVerification = 
               car.location?.toLowerCase().includes('pune') && 
-              car.mileage < 60000 && 
+              (car.kmDriven ?? car.mileage ?? 0) < 60000 && 
               car.ownerType === 'First Owner';
 
             return (

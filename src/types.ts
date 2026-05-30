@@ -9,7 +9,9 @@ export interface Car {
   model: string;
   year: number;
   price: number;
-  mileage: number;
+  kmDriven?: number;
+  fuelEfficiency?: number;
+  mileage?: number;
   location: string;
   state?: string;
   fuelType: FuelType;

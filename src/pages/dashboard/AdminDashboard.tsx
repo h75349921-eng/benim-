@@ -417,7 +417,7 @@ export default function AdminDashboard() {
                           <p className="text-[10px] text-slate-400 font-black tracking-wider uppercase mt-1">₹{car.price.toLocaleString()} • {car.year}</p>
                           <div className="flex flex-wrap gap-1 mt-1">
                             <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[8px] font-extrabold rounded uppercase">{car.location}</span>
-                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-extrabold rounded uppercase">{car.mileage} KM</span>
+                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-extrabold rounded uppercase">{car.kmDriven ?? car.mileage ?? 0} KM</span>
                           </div>
                         </div>
                       </div>

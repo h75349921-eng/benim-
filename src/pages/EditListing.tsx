@@ -22,7 +22,8 @@ export default function EditListing() {
     model: '',
     year: '',
     price: '',
-    mileage: '',
+    kmDriven: '',
+    fuelEfficiency: '',
     fuel: 'Hybrid',
     location: '',
     state: 'Maharashtra',
@@ -53,7 +54,7 @@ export default function EditListing() {
     setIsGenerating(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `Write a professional and compelling car listing description for a ${formData.year} ${formData.brand} ${formData.model} with ${formData.mileage} KM mileage. The car is powered by a ${formData.fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
+      const prompt = `Write a professional and compelling car listing description for a ${formData.year} ${formData.brand} ${formData.model} with ${formData.kmDriven} KM driven and ${formData.fuelEfficiency} km/l mileage. The car is powered by a ${formData.fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -79,7 +80,8 @@ export default function EditListing() {
         model: car.model,
         year: car.year.toString(),
         price: car.price.toString(),
-        mileage: car.mileage.toString(),
+        kmDriven: car.kmDriven?.toString() || '',
+        fuelEfficiency: car.fuelEfficiency?.toString() || '',
         fuel: car.fuelType || 'Hybrid',
         location: car.location.split(',')[0],
         state: car.location.split(',')[1]?.trim() || 'Maharashtra',
@@ -152,7 +154,8 @@ export default function EditListing() {
         model: formData.model,
         year: parseInt(formData.year),
         price: parseInt(formData.price),
-        mileage: parseInt(formData.mileage),
+        kmDriven: parseInt(formData.kmDriven),
+        fuelEfficiency: parseInt(formData.fuelEfficiency),
         fuelType: formData.fuel as any,
         images: photos,
         location: `${formData.location}, ${formData.state}`,
@@ -321,11 +324,20 @@ export default function EditListing() {
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Mileage (km)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">KM Driven</label>
               <input 
                 type="number" 
-                value={formData.mileage}
-                onChange={(e) => setFormData({...formData, mileage: e.target.value})}
+                value={formData.kmDriven}
+                onChange={(e) => setFormData({...formData, kmDriven: e.target.value})}
+                className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold"
+              />
+            </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Mileage (km/l)</label>
+              <input 
+                type="number" 
+                value={formData.fuelEfficiency}
+                onChange={(e) => setFormData({...formData, fuelEfficiency: e.target.value})}
                 className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold"
               />
             </div>

@@ -35,6 +35,7 @@ export default function CreateListing() {
     year: '',
     fuel: 'Hybrid',
     transmission: 'Automatic',
+    kmDriven: '',
     mileage: '',
     owners: 'First Owner',
     vin: '',
@@ -62,7 +63,7 @@ export default function CreateListing() {
     if (!formData.brand) newErrors.brand = 'Brand is required';
     if (!formData.model) newErrors.model = 'Model is required';
     if (!formData.year) newErrors.year = 'Year is required';
-    if (!formData.mileage) newErrors.mileage = 'Mileage is required';
+    if (!formData.kmDriven) newErrors.kmDriven = 'KM Driven is required';
     
     // Check if numbers
     if (formData.year && (parseInt(formData.year) < 1990 || parseInt(formData.year) > 2026)) {
@@ -95,7 +96,7 @@ export default function CreateListing() {
     setIsGenerating(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `Write a professional and compelling car listing description for a ${formData.year} ${formData.brand} ${formData.model} with ${formData.mileage} KM mileage. The car is powered by a ${formData.fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
+      const prompt = `Write a professional and compelling car listing description for a ${formData.year} ${formData.brand} ${formData.model} with ${formData.kmDriven} KM driven and ${formData.mileage} km/l mileage. The car is powered by a ${formData.fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -172,7 +173,7 @@ export default function CreateListing() {
   const isVerifiedEligible = 
     formData.state && formData.state.toLowerCase() === 'maharashtra' && 
     formData.location && formData.location.toLowerCase() === 'pune' && 
-    formData.mileage && parseInt(formData.mileage) < 60000 && 
+    formData.kmDriven && parseInt(formData.kmDriven) < 60000 && 
     formData.owners === 'First Owner';
 
   const handlePublishListing = async (isPremium = false) => {
@@ -187,7 +188,8 @@ export default function CreateListing() {
         model: formData.model,
         year: parseInt(formData.year),
         price: parseInt(formData.price),
-        mileage: parseInt(formData.mileage),
+        kmDriven: parseInt(formData.kmDriven),
+        fuelEfficiency: parseInt(formData.mileage),
         location: `${formData.location}, ${formData.state}`,
         fuelType: formData.fuel as any,
         transmission: formData.transmission as any,
@@ -426,15 +428,25 @@ export default function CreateListing() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className={cn("text-xs font-extrabold uppercase tracking-widest", errors.mileage ? "text-red-500" : "text-slate-400")}>KM Driven *</label>
+                      <label className={cn("text-xs font-extrabold uppercase tracking-widest", errors.kmDriven ? "text-red-500" : "text-slate-400")}>KM Driven *</label>
                       <input 
                         type="number" 
                         placeholder="KM" 
-                        className={cn("w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2", errors.mileage ? "ring-2 ring-red-500/20" : "")}
+                        className={cn("w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2", errors.kmDriven ? "ring-2 ring-red-500/20" : "")}
+                        value={formData.kmDriven}
+                        onChange={(e) => setFormData({...formData, kmDriven: e.target.value})}
+                      />
+                      {errors.kmDriven && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.kmDriven}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Mileage (km/l) *</label>
+                      <input 
+                        type="number" 
+                        placeholder="km/l" 
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2"
                         value={formData.mileage}
                         onChange={(e) => setFormData({...formData, mileage: e.target.value})}
                       />
-                      {errors.mileage && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.mileage}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-6">

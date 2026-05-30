@@ -11,6 +11,7 @@ import { ChatProvider } from './context/ChatContext';
 // import { verifyFirestoreConnectivity } from './lib/verifyConnectivity';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 import AboutUs from './pages/AboutUs';
 import Careers from './pages/Careers';
 import Blogs from './pages/Blogs';
@@ -48,7 +49,8 @@ export default function App() {
       <ChatProvider>
         <CarProvider>
           <Router>
-        <div className="flex flex-col min-h-screen">
+            <ScrollToTop />
+            <div className="flex flex-col min-h-screen">
           <Navbar />
           <div className="flex-1">
             <Routes>

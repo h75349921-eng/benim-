@@ -105,7 +105,7 @@ export default function ListingCard({ car }: ListingCardProps) {
             <MapPin className="h-3 w-3" /> {(car.location || 'Unknown').split(',')[0]}
           </span>
           <span className="w-1 h-1 bg-slate-200 rounded-full" />
-          <span>{car.mileage.toLocaleString()} km</span>
+          <span>{(car.kmDriven ?? car.mileage ?? 0).toLocaleString()} km</span>
         </div>
 
         <Link to={`/vehicle/${car.id}`} className="flex items-end justify-between hover:opacity-80 transition-opacity">
