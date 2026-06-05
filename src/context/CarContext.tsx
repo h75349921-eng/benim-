@@ -201,7 +201,52 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     const carsQuery = query(collection(db, 'cars'));
     const unsubscribeCars = onSnapshot(carsQuery, (snapshot) => {
       console.log(`Cars Sync: Received ${snapshot.docs.length} listings from database.`);
-      const carsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Car));
+      const now = new Date();
+      
+      const carsData = snapshot.docs.map(snapshotDoc => {
+        const data = snapshotDoc.data() as any;
+        const id = snapshotDoc.id;
+        
+        let isPremium = data.isPremium;
+        let boostPlanName = data.boostPlanName;
+        let boostStartDate = data.boostStartDate;
+        let boostExpiresAt = data.boostExpiresAt;
+        let status = data.status;
+
+        if (boostExpiresAt) {
+          const expiryDate = new Date(boostExpiresAt);
+          if (expiryDate <= now) {
+            // Expired! Clean up in UI immediately and update Firestore
+            isPremium = false;
+            boostPlanName = null;
+            boostStartDate = null;
+            boostExpiresAt = null;
+            if (status === 'Prime') {
+              status = 'Standard';
+            }
+            
+            // Asynchronously resolve Firestore cleanup
+            updateDoc(doc(db, 'cars', id), {
+              isPremium: false,
+              boostPlanName: null,
+              boostStartDate: null,
+              boostExpiresAt: null,
+              status: status === 'Prime' ? 'Standard' : status,
+              updatedAt: serverTimestamp()
+            }).catch(err => console.error(`Failed to clean up expired boost for car ${id}:`, err));
+          }
+        }
+        
+        return {
+          ...data,
+          id,
+          isPremium,
+          boostPlanName,
+          boostStartDate,
+          boostExpiresAt,
+          status
+        } as Car;
+      });
       
       if (snapshot.docs.length < 5 && !isSeeding) {
         console.warn('Very few cars found in database. Seeding might be needed.');

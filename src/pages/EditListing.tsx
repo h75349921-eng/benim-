@@ -365,7 +365,7 @@ export default function EditListing() {
               </select>
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">State</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">STATE</label>
               <select 
                 value={formData.state}
                 onChange={(e) => setFormData({...formData, state: e.target.value, location: ''})}
@@ -528,15 +528,6 @@ export default function EditListing() {
           <div className="mt-8 space-y-3">
             <div className="flex justify-between items-center">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Description</label>
-              <button 
-                type="button"
-                onClick={generateAIDescription}
-                disabled={isGenerating}
-                className="flex items-center gap-2 text-[10px] font-black text-secondary-500 bg-secondary-50 px-3 py-1.5 rounded-lg hover:bg-secondary-100 transition-all disabled:opacity-50"
-              >
-                <Sparkles className={cn("h-3 w-3", isGenerating && "animate-spin")} />
-                {isGenerating ? 'WRITING...' : 'GENERATE WITH AI'}
-              </button>
             </div>
             <textarea 
               rows={6}

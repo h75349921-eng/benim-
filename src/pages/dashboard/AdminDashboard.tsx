@@ -43,17 +43,38 @@ interface FirebaseUser {
 export default function AdminDashboard() {
   const { cars, bookings, isLoading: carsLoading, toggleFavorite } = useCars();
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'activity'>('listings');
+  const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'activity' | 'boosts'>('listings');
   const [userList, setUserList] = useState<FirebaseUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [pendingCars, setPendingCars] = useState<Car[]>([]);
   const [processedCarIds, setProcessedCarIds] = useState<Set<string>>(new Set());
+  
+  // All Payments State for Admin Log
+  const [allPayments, setAllPayments] = useState<any[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
 
   // Search and filter states
   const [listingSearch, setListingSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [listingFilter, setListingFilter] = useState<'all' | 'premium' | 'verified' | 'normal'>('all');
   const [userFilter, setUserFilter] = useState<'all' | 'admin' | 'dealer' | 'seller' | 'buyer'>('all');
+
+  useEffect(() => {
+    async function fetchAllPayments() {
+      if (!user || user.role !== 'admin') return;
+      try {
+        setPaymentsLoading(true);
+        const paymentsSnap = await getDocs(collection(db, 'payments'));
+        const paymentsData = paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAllPayments(paymentsData.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      } catch (err) {
+        console.error('Error fetching admin payments:', err);
+      } finally {
+        setPaymentsLoading(false);
+      }
+    }
+    fetchAllPayments();
+  }, [user, activeTab]);
 
   useEffect(() => {
     setPendingCars(cars.filter(car => car.isVerificationPending && !processedCarIds.has(car.id)));
@@ -195,12 +216,16 @@ export default function AdminDashboard() {
     if (!window.confirm('Are you sure you want to delete this verification request?')) return;
     try {
       const carRef = doc(db, 'cars', carId);
+      // Remove verification request fields
       await updateDoc(carRef, { 
         isVerified: false,
         isVerificationPending: false,
-        verificationStatus: 'rejected'
+        verificationStatus: 'none'
       });
       alert('Verification request DELETED.');
+      
+      // Immediately remove from local UI state
+      setPendingCars(prev => prev.filter(c => c.id !== carId));
       setProcessedCarIds(prev => new Set(prev).add(carId));
     } catch (error) {
       console.error('Error deleting verification:', error);
@@ -221,12 +246,15 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteCar = async (carId: string) => {
+    console.log('Attempting to delete car:', carId);
     if (!window.confirm('Are you absolutely sure you want to delete this listing from the marketplace? This action is irreversible.')) return;
     try {
       await deleteDoc(doc(db, 'cars', carId));
+      console.log('Successfully deleted car:', carId);
       alert('Listing successfully removed from Benim Cars.');
     } catch (error) {
       console.error('Error deleting car:', error);
+      alert('Failed to delete car. Check console for details.');
     }
   };
 
@@ -384,6 +412,15 @@ export default function AdminDashboard() {
             )}
           >
             <MessageSquare className="h-4 w-4" /> CRM Inquiries Activity ({totalInquiries})
+          </button>
+          <button 
+            onClick={() => setActiveTab('boosts')}
+            className={cn(
+              "px-8 py-4 font-black text-sm uppercase tracking-wider border-b-4 transition-all flex items-center gap-2",
+              activeTab === 'boosts' ? "border-primary-500 text-primary-500" : "border-transparent text-slate-400 hover:text-slate-600"
+            )}
+          >
+            <Zap className="h-4 w-4" /> Boosted Ads
           </button>
         </div>
 
@@ -596,7 +633,13 @@ export default function AdminDashboard() {
                           View Live
                         </Link>
                         <button 
-                          onClick={() => handleDeleteCar(car.id)}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Delete button clicked for:', car.id);
+                            handleDeleteCar(car.id);
+                          }}
                           className="px-4 py-2 bg-red-50 hover:bg-red-500 hover:text-white text-red-500 rounded-xl transition-all flex items-center justify-center border border-red-100/30"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -729,6 +772,189 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Boosted Listings Manager */}
+        {activeTab === 'boosts' && (
+          <div className="space-y-8">
+            {/* Analytical Cards */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-3xl p-6 border border-amber-200/40 shadow-sm">
+                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Total Boost Revenue</p>
+                <h4 className="text-3xl font-black text-slate-900">
+                  ₹{allPayments
+                    .filter(p => p.type === 'Boost' || p.listingTitle?.toLowerCase().includes('boost'))
+                    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+                    .toLocaleString('en-IN')}
+                </h4>
+                <p className="text-[11px] text-amber-700 font-bold mt-2">Durable accumulated sales</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-3xl p-6 border border-indigo-200/40 shadow-sm">
+                <p className="text-[10px] font-black text-indigo-650 uppercase tracking-widest mb-1">Unique Customers Boosted</p>
+                <h4 className="text-3xl font-black text-slate-900">
+                  {new Set(
+                    allPayments
+                      .filter(p => p.type === 'Boost' || p.listingTitle?.toLowerCase().includes('boost'))
+                      .map(p => p.userId)
+                  ).size}
+                </h4>
+                <p className="text-[11px] text-indigo-700 font-bold mt-2">Distinct sellers upgraded</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-3xl p-6 border border-emerald-200/40 shadow-sm">
+                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Active Prime Placements</p>
+                <h4 className="text-3xl font-black text-slate-900">
+                  {cars.filter(c => c.boostPlanName && c.isPremium).length}
+                </h4>
+                <p className="text-[11px] text-emerald-700 font-bold mt-2">Currently promoted on marketplace</p>
+              </div>
+            </div>
+
+            {/* Sub-section 1: Active Boosted Ads list */}
+            <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm p-8">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-amber-500 fill-amber-500" /> Active Promoted Listings & Prime Batch Expirations
+                  </h3>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">Sellers with active Prime badge on their cars, duration, and exact expiry dates.</p>
+                </div>
+                <span className="px-4 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl uppercase tracking-wider">
+                  Live Market
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Listing Info</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Seller</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan Name</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration (Days)</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Boosted Date</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Prime Expiry Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {cars.filter(c => c.boostPlanName).length > 0 ? (
+                      cars.filter(c => c.boostPlanName).map((car) => {
+                        const start = car.boostStartDate ? new Date(car.boostStartDate) : null;
+                        const expiry = car.boostExpiresAt ? new Date(car.boostExpiresAt) : null;
+                        let daysBoosted = '30';
+                        if (start && expiry) {
+                          const diff = expiry.getTime() - start.getTime();
+                          daysBoosted = String(Math.round(diff / (1000 * 60 * 60 * 24)));
+                        }
+
+                        return (
+                          <tr key={car.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-6">
+                              <div className="font-bold text-slate-900">{car.title}</div>
+                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">ID: {car.id}</div>
+                            </td>
+                            <td className="p-6">
+                              <div className="font-bold text-slate-700">{car.seller.name}</div>
+                              <div className="text-[10px] font-bold text-primary-500 uppercase tracking-wider mt-0.5">{car.seller.type || 'Seller'}</div>
+                            </td>
+                            <td className="p-6">
+                              <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-black rounded-lg uppercase tracking-wide border border-amber-100">
+                                {car.boostPlanName}
+                              </span>
+                            </td>
+                            <td className="p-6 font-mono text-sm font-black text-slate-700">{daysBoosted} Days</td>
+                            <td className="p-6 font-medium text-slate-500">
+                              {start ? start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </td>
+                            <td className="p-6 font-black text-rose-600">
+                              {expiry ? expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-slate-400 font-bold uppercase tracking-wider text-xs">
+                          No Active Promoted Ads found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Sub-section 2: Transaction Receipts log */}
+            <div className="bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm p-8">
+              <div className="mb-8">
+                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-indigo-500" /> Historic Payment Logs & Receipts
+                </h3>
+                <p className="text-xs text-slate-400 font-semibold mt-1">Durable records of all upgrade fees transferred by users.</p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Receipt ID</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Purchaser User ID</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Listing Item</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Paid Amount</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Date</th>
+                      <th className="p-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Receipt Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {allPayments.length > 0 ? (
+                      allPayments.map((payment) => {
+                        const linkedCar = cars.find(c => c.id === payment.listingId);
+                        const matchedUser = userList.find(u => u.id === payment.userId);
+                        
+                        return (
+                          <tr key={payment.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-6 font-mono text-xs font-bold text-slate-500">{payment.id}</td>
+                            <td className="p-6">
+                              <div className="font-bold text-slate-900">{matchedUser ? matchedUser.name : 'Individual User'}</div>
+                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">{payment.userId}</div>
+                            </td>
+                            <td className="p-6">
+                              <div className="font-bold text-slate-700">{payment.listingTitle || linkedCar?.title || 'Boost Service'}</div>
+                              <div className="text-[10px] text-slate-400 font-bold mt-0.5">Asset ID: {payment.listingId}</div>
+                            </td>
+                            <td className="p-6 font-mono text-sm font-black text-emerald-600">
+                              ₹{Number(payment.amount).toLocaleString('en-IN')}
+                            </td>
+                            <td className="p-6 font-medium text-slate-500">
+                              {payment.date ? new Date(payment.date).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : 'N/A'}
+                            </td>
+                            <td className="p-6">
+                              <span className="px-2.5 py-1 bg-emerald-150 text-emerald-800 text-[10px] font-black rounded-lg uppercase tracking-wider">
+                                {payment.status || 'Completed'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-slate-400 font-bold uppercase tracking-wider text-xs">
+                          {paymentsLoading ? 'Fetching receipts from database...' : 'No transaction records found.'}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

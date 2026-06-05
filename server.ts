@@ -30,7 +30,7 @@ async function startServer() {
       const prompt = `Write a professional and compelling car listing description for a ${year} ${brand} ${model} titled "${title || 'Car'}" with ${kmDriven} KM driven and ${mileage} km/l mileage. The car is powered by a ${fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
       
       const result = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }]
       });
       const description = result.text || "";

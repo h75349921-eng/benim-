@@ -189,8 +189,40 @@ export default function Browse() {
     if (sortBy === 'premium') {
       const paid: any[] = [];
       const organic: any[] = [];
+      const bottomListings: any[] = [];
+      const activeListings: any[] = [];
+
+      const getSeconds = (ts: any) => {
+        if (!ts) return 0;
+        if (typeof ts.seconds === 'number') return ts.seconds;
+        if (ts instanceof Date) return ts.getTime() / 1000;
+        if (typeof ts === 'number') return ts / 1000;
+        const parsed = Date.parse(ts);
+        if (!isNaN(parsed)) return parsed / 1000;
+        return 0;
+      };
+
       for (const car of sorted) {
-        const isPrime = car.status === 'Prime' || car.isPremium === true;
+        const isPrime = car.status === 'Prime' || car.isPremium === true || !!car.boostPlanName;
+        const isVerified = car.isVerified === true || car.status === 'Verified';
+        const createdAtSeconds = getSeconds(car.createdAt);
+        const carTimeMs = createdAtSeconds * 1000;
+        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+        const isOlderThan3Days = carTimeMs > 0 && (Date.now() - carTimeMs) > THREE_DAYS_MS;
+
+        // If a listing has NO prime batch AND NO verified batch, AND is older than 3 days (or has no post date),
+        // it is classified as low priority and goes to the bottom.
+        const goesToBottom = (!isPrime && !isVerified) && (isOlderThan3Days || carTimeMs === 0);
+
+        if (goesToBottom) {
+          bottomListings.push(car);
+        } else {
+          activeListings.push(car);
+        }
+      }
+
+      for (const car of activeListings) {
+        const isPrime = car.status === 'Prime' || car.isPremium === true || !!car.boostPlanName;
         if (isPrime) {
           paid.push(car);
         } else {
@@ -213,7 +245,9 @@ export default function Browse() {
           }
         }
       }
-      return interleaved;
+
+      // Append bottom listings at the absolute end of the interleaved/recommended list
+      return [...interleaved, ...bottomListings];
     }
 
     return sorted;

@@ -65,10 +65,10 @@ export default function SellerDashboard() {
                 hasActiveBoost = true;
                 const diffTime = expiryDate.getTime() - now.getTime();
                 daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-                expiresText = expiryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                expiresText = expiryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
               } else {
                 hasExpiredBoost = true;
-                expiresText = expiryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                expiresText = expiryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
               }
             } else if (ad.isPremium) {
               // Standard active boost if isPremium is true but dates aren't saved

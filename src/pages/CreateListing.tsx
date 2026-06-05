@@ -53,6 +53,7 @@ export default function CreateListing() {
     power: '',
     insurance: 'Comprehensive',
     serviceHistory: '',
+    registrationState: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -138,7 +139,29 @@ export default function CreateListing() {
   };
 
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const isPublishingRef = React.useRef(false);
+
+  const generateDescription = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) throw new Error('Failed to generate description.');
+      const { description } = await response.json();
+      setFormData(prev => ({ ...prev, description }));
+    } catch (error) {
+      console.error('AI Generation Error:', error);
+      alert('Failed to generate description. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const isVerifiedEligible = 
     formData.state && formData.state.toLowerCase() === 'maharashtra' && 
@@ -181,7 +204,8 @@ export default function CreateListing() {
           accidentHistory: formData.accidentHistory as any,
           steeringType: formData.steeringType,
           bluetooth: formData.bluetooth === 'Yes',
-          serviceHistory: formData.serviceHistory
+          serviceHistory: formData.serviceHistory,
+          registrationState: formData.registrationState
         }
       }, {
         name: user.name,
@@ -442,6 +466,16 @@ export default function CreateListing() {
                         onChange={(e) => setFormData({...formData, vin: e.target.value})}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Registration State *</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. MH, KA, DL" 
+                        className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold" 
+                        value={formData.registrationState}
+                        onChange={(e) => setFormData({...formData, registrationState: e.target.value})}
+                      />
+                    </div>
                   </div>
 
                   {/* Technical Specifications Section */}
@@ -678,7 +712,7 @@ export default function CreateListing() {
                       {errors.price && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.price}</p>}
                     </div>
                     <div className="space-y-2">
-                        <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">State *</label>
+                        <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">STATE *</label>
                         <select 
                           className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold"
                           value={formData.state}
@@ -705,7 +739,9 @@ export default function CreateListing() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className={cn("text-xs font-extrabold uppercase tracking-widest", errors.description ? "text-red-500" : "text-slate-400")}>Additional Description *</label>
+                    <div className="flex justify-between items-center">
+                      <label className={cn("text-xs font-extrabold uppercase tracking-widest", errors.description ? "text-red-500" : "text-slate-400")}>Additional Description *</label>
+                    </div>
                     <textarea 
                       rows={4} 
                       className={cn("w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2", errors.description ? "ring-2 ring-red-500/20" : "")}

@@ -28,6 +28,15 @@ export default function MyListings() {
     }
   };
 
+  const calculateDaysRemaining = (expiresAt?: string) => {
+    if (!expiresAt) return null;
+    const expiry = new Date(expiresAt);
+    const now = new Date();
+    const diffTime = expiry.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <button 
@@ -56,10 +65,23 @@ export default function MyListings() {
               car.location?.toLowerCase().includes('pune') && 
               (car.kmDriven ?? car.mileage ?? 0) < 60000 && 
               car.ownerType === 'First Owner';
+            const daysRemaining = car.boostExpiresAt ? calculateDaysRemaining(car.boostExpiresAt) : null;
+            const boostExpiresDate = car.boostExpiresAt ? new Date(car.boostExpiresAt).toLocaleDateString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric'
+            }) : null;
 
             return (
               <div key={car.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col">
                 <ListingCard car={car} />
+                
+                {/* Boost Expiry Display */}
+                {car.boostPlanName && (
+                  <div className="px-6 pb-2 text-[10px] font-black text-primary-600 uppercase tracking-widest">
+                    Boost Active: {car.boostPlanName} {daysRemaining !== null ? `(${daysRemaining} days left - Expires: ${boostExpiresDate})` : 'Calculating...'}
+                  </div>
+                )}
 
                 {/* Pune Free Verification Banner */}
                 {!car.isVerified && isEligibleForFreeVerification && (

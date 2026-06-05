@@ -5,7 +5,7 @@
 
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CarProvider } from './context/CarContext';
 import { ChatProvider } from './context/ChatContext';
 // import { verifyFirestoreConnectivity } from './lib/verifyConnectivity';
@@ -37,20 +37,40 @@ import RentalDetail from './pages/RentalDetail';
 import BuyerDashboard from './pages/dashboard/BuyerDashboard';
 import SellerDashboard from './pages/dashboard/SellerDashboard';
 import DealerDashboard from './pages/dashboard/DealerDashboard';
+import CompleteProfile from './pages/CompleteProfile';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 
+import { useNavigate, useLocation } from 'react-router-dom';
+// ...
 export default function App() {
-  useEffect(() => {
-    // verifyFirestoreConnectivity();
-  }, []);
-
   return (
     <AuthProvider>
       <ChatProvider>
         <CarProvider>
           <Router>
-            <ScrollToTop />
-            <div className="flex flex-col min-h-screen">
+            <AppRoot />
+          </Router>
+        </CarProvider>
+      </ChatProvider>
+    </AuthProvider>
+  );
+}
+
+function AppRoot() {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && user && !user.phone && location.pathname !== '/complete-profile') {
+      navigate('/complete-profile');
+    }
+  }, [user, isLoading, location.pathname, navigate]);
+
+  return (
+    <>
+      <ScrollToTop />
+      <div className="flex flex-col min-h-screen">
           <Navbar />
           <div className="flex-1">
             <Routes>
@@ -62,6 +82,7 @@ export default function App() {
               <Route path="/rentals/:id" element={<RentalDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/profile/listings" element={<MyListings />} />
               <Route path="/profile/edit/:id" element={<EditListing />} />
               <Route path="/profile/boost/:id" element={<BoostListing />} />
@@ -91,9 +112,6 @@ export default function App() {
         </div>
         <Footer />
       </div>
-    </Router>
-   </CarProvider>
-  </ChatProvider>
- </AuthProvider>
-);
+    </>
+  );
 }
