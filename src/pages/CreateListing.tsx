@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Car as CarIcon, Image as ImageIcon, IndianRupee, 
   CheckCircle2, ChevronRight, ChevronLeft, 
-  ShieldCheck, AlertCircle, Camera, Trash2, Plus, Zap, Star,
-  Sparkles
+  ShieldCheck, AlertCircle, Camera, Trash2, Plus, Zap, Star
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,7 +11,6 @@ import { useCars } from '../context/CarContext';
 import { useAuth } from '../context/AuthContext';
 import { INDIAN_LOCATIONS, STATES } from '../constants/locations';
 import { CAR_BRANDS, BRAND_NAMES } from '../constants/brands';
-import { GoogleGenAI } from "@google/genai";
 
 const STEPS = [
   { id: 1, label: 'Vehicle Details', icon: CarIcon },
@@ -85,34 +83,6 @@ export default function CreateListing() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const generateAIDescription = async () => {
-    if (!formData.brand || !formData.model) {
-      alert("Please enter Brand and Model first.");
-      return;
-    }
-    
-    setIsGenerating(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `Write a professional and compelling car listing description for a ${formData.year} ${formData.brand} ${formData.model} with ${formData.kmDriven} KM driven and ${formData.mileage} km/l mileage. The car is powered by a ${formData.fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-      });
-
-      if (response.text) {
-        setFormData(prev => ({ ...prev, description: response.text }));
-      }
-    } catch (error) {
-      console.error("AI Error:", error);
-      alert("Failed to generate description. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const handleNext = () => {
     if (currentStep === 1) {
@@ -735,18 +705,7 @@ export default function CreateListing() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <label className={cn("text-xs font-extrabold uppercase tracking-widest", errors.description ? "text-red-500" : "text-slate-400")}>Additional Description *</label>
-                      <button 
-                        type="button"
-                        onClick={generateAIDescription}
-                        disabled={isGenerating}
-                        className="flex items-center gap-2 text-[10px] font-black text-secondary-500 bg-secondary-50 px-3 py-1.5 rounded-lg hover:bg-secondary-100 transition-all disabled:opacity-50"
-                      >
-                        <Sparkles className={cn("h-3 w-3", isGenerating && "animate-spin")} />
-                        {isGenerating ? 'WRITING...' : 'GENERATE WITH AI'}
-                      </button>
-                    </div>
+                    <label className={cn("text-xs font-extrabold uppercase tracking-widest", errors.description ? "text-red-500" : "text-slate-400")}>Additional Description *</label>
                     <textarea 
                       rows={4} 
                       className={cn("w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2", errors.description ? "ring-2 ring-red-500/20" : "")}

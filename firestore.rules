@@ -79,7 +79,7 @@ service cloud.firestore {
     // --- Users ---
     match /users/{userId} {
       allow get: if isSignedIn();
-      allow list: if false;
+      allow list: if isSignedIn();
       allow create: if isOwner(userId) || isSeedingDummy(userId) || isAdmin();
       allow update: if isOwner(userId) || isSeedingDummy(userId) || isAdmin();
     }

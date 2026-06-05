@@ -208,18 +208,126 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Sort manually in memory for now to be safe
-      const sortedCars = carsData.sort((a, b) => {
+      const sortedCarsRaw = carsData.sort((a, b) => {
         const getSeconds = (ts: any) => {
           if (!ts) return 0;
           if (typeof ts.seconds === 'number') return ts.seconds;
           if (ts instanceof Date) return ts.getTime() / 1000;
           if (typeof ts === 'number') return ts / 1000;
+          const parsed = Date.parse(ts);
+          if (!isNaN(parsed)) return parsed / 1000;
           return 0;
         };
-        return getSeconds(b.createdAt) - getSeconds(a.createdAt);
+
+        const getRawScore = (car: Car) => {
+          let baseScore = 0;
+          const nowMs = Date.now();
+          const createdAtSeconds = getSeconds(car.createdAt);
+          const carTimeMs = createdAtSeconds * 1000;
+
+          const isPrime = car.status === 'Prime' || car.isPremium === true;
+          const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+          const isLatest = carTimeMs > 0 && (nowMs - carTimeMs) <= ONE_DAY_MS;
+          const isVerified = car.isVerified === true || car.status === 'Verified';
+
+          // Base priority score - additive approach to reward listings with cumulative matches
+          if (isPrime) {
+            baseScore += 500000;
+          }
+          if (isLatest) {
+            baseScore += 300000;
+          }
+          if (isVerified) {
+            baseScore += 150000;
+          }
+
+          // Down-prioritize unverified, non-prime listings that are older than 3 days to keep them at the bottom
+          const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+          const isOldUnverifiedNonPrime = !isPrime && !isVerified && carTimeMs > 0 && (nowMs - carTimeMs) > THREE_DAYS_MS;
+          if (isOldUnverifiedNonPrime) {
+            baseScore -= 1000000;
+          }
+
+          // Intra-tier quality scoring
+          let qualityBonus = 0;
+
+          // Freshness bonus within the tier code (fresher = higher)
+          if (createdAtSeconds > 0) {
+            qualityBonus += (createdAtSeconds / 20000); 
+          }
+
+          // Premium start boost timestamp weighting
+          if (isPrime && car.boostStartDate) {
+            const parsed = Date.parse(car.boostStartDate);
+            if (!isNaN(parsed)) {
+              qualityBonus += (parsed / 20000000);
+            }
+          }
+
+          // Complete with images bonus
+          if (car.images && car.images.length > 0) {
+            qualityBonus += 1000;
+            qualityBonus += Math.min(car.images.length, 5) * 200;
+          } else {
+            qualityBonus -= 2000;
+          }
+
+          // Description & details bonus
+          if (car.description) {
+            if (car.description.length > 150) {
+              qualityBonus += 500;
+            } else if (car.description.length > 50) {
+              qualityBonus += 250;
+            }
+          }
+
+          // Technical data completeness
+          if (car.specs) {
+            let specCount = 0;
+            if (car.specs.engine) specCount++;
+            if (car.specs.power || car.specs.maxPower) specCount++;
+            if (car.specs.color) specCount++;
+            if (car.specs.insuranceStatus) specCount++;
+            if (car.specs.serviceHistory) specCount++;
+            qualityBonus += specCount * 200;
+          }
+
+          return baseScore + qualityBonus;
+        };
+
+        return getRawScore(b) - getRawScore(a);
       });
+
+      // Split into Paid and Organic based on Prime/isPremium status
+      const paid: Car[] = [];
+      const organic: Car[] = [];
+      for (const car of sortedCarsRaw) {
+        const isPrime = car.status === 'Prime' || car.isPremium === true;
+        if (isPrime) {
+          paid.push(car);
+        } else {
+          organic.push(car);
+        }
+      }
+
+      // Interleave at a controlled 1 Paid : 3 Organic ratio
+      const interleavedSortedCars: Car[] = [];
+      let pIdx = 0;
+      let oIdx = 0;
+      while (pIdx < paid.length || oIdx < organic.length) {
+        if (pIdx < paid.length) {
+          interleavedSortedCars.push(paid[pIdx]);
+          pIdx++;
+        }
+        for (let i = 0; i < 3; i++) {
+          if (oIdx < organic.length) {
+            interleavedSortedCars.push(organic[oIdx]);
+            oIdx++;
+          }
+        }
+      }
       
-      setCars(sortedCars);
+      setCars(interleavedSortedCars);
       setIsLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'cars');

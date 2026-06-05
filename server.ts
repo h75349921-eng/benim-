@@ -19,7 +19,7 @@ async function startServer() {
   // API Route for Genkit/AI Description Generation
   app.post("/api/generate-description", async (req, res) => {
     try {
-      const { brand, model, year, mileage } = req.body;
+      const { brand, model, year, kmDriven, mileage, fuel, title } = req.body;
       const apiKey = process.env.GEMINI_API_KEY;
 
       if (!apiKey) {
@@ -27,7 +27,7 @@ async function startServer() {
       }
 
       const genAI = new GoogleGenAI({ apiKey: apiKey });
-      const prompt = `Generate a compelling and professional car sell description for a ${year} ${brand} ${model} with ${mileage} km. Mention its hybrid efficiency and great condition. Keep it under 100 words.`;
+      const prompt = `Write a professional and compelling car listing description for a ${year} ${brand} ${model} titled "${title || 'Car'}" with ${kmDriven} KM driven and ${mileage} km/l mileage. The car is powered by a ${fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
       
       const result = await genAI.models.generateContent({
         model: "gemini-1.5-flash",

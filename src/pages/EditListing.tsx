@@ -7,7 +7,6 @@ import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { INDIAN_LOCATIONS, STATES } from '../constants/locations';
 import { CAR_BRANDS, BRAND_NAMES } from '../constants/brands';
-import { GoogleGenAI } from "@google/genai";
 import { cn } from '../lib/utils';
 
 export default function EditListing() {
@@ -53,16 +52,24 @@ export default function EditListing() {
     
     setIsGenerating(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `Write a professional and compelling car listing description for a ${formData.year} ${formData.brand} ${formData.model} with ${formData.kmDriven} KM driven and ${formData.fuelEfficiency} km/l mileage. The car is powered by a ${formData.fuel} engine/motor. Highlight its performance, fuel/energy efficiency, smooth driving experience, and maintenance history. Keep it concise but attractive to buyers.`;
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+      const response = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand: formData.brand,
+          model: formData.model,
+          year: formData.year,
+          kmDriven: formData.kmDriven,
+          mileage: formData.fuelEfficiency,
+          fuel: formData.fuel
+        })
       });
-
-      if (response.text) {
-        setFormData(prev => ({ ...prev, description: response.text }));
+      
+      const data = await response.json();
+      if (data.description) {
+        setFormData(prev => ({ ...prev, description: data.description }));
+      } else {
+        throw new Error(data.error || 'Failed to generate');
       }
     } catch (error) {
       console.error("AI Error:", error);

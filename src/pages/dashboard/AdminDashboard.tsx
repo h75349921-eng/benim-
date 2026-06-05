@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
-  Car, 
+  Car as LucideCar, 
   Users, 
   CheckCircle, 
   XCircle, 
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useCars } from '../../context/CarContext';
 import { useAuth } from '../../context/AuthContext';
+import { Car } from '../../types';
 import { cn } from '../../lib/utils';
 import { collection, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -45,24 +46,39 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'listings' | 'users' | 'activity'>('listings');
   const [userList, setUserList] = useState<FirebaseUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
-  
+  const [pendingCars, setPendingCars] = useState<Car[]>([]);
+  const [processedCarIds, setProcessedCarIds] = useState<Set<string>>(new Set());
+
   // Search and filter states
   const [listingSearch, setListingSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [listingFilter, setListingFilter] = useState<'all' | 'premium' | 'verified' | 'normal'>('all');
   const [userFilter, setUserFilter] = useState<'all' | 'admin' | 'dealer' | 'seller' | 'buyer'>('all');
 
-  // Fetch all users on mount
+  useEffect(() => {
+    setPendingCars(cars.filter(car => car.isVerificationPending && !processedCarIds.has(car.id)));
+  }, [cars, processedCarIds]);
+
   useEffect(() => {
     async function fetchUsers() {
-      if (!user || user.role !== 'admin') return;
+      if (!user || user.role !== 'admin') {
+        console.log('DEBUG: Auth user not admin or null:', user);
+        return;
+      }
       try {
         setUsersLoading(true);
+        console.log('DEBUG: Fetching users from Firestore...');
         const usersSnap = await getDocs(collection(db, 'users'));
+        console.log(`DEBUG: Users snapshot received. Empty: ${usersSnap.empty}, Size: ${usersSnap.size}`);
+        
         const fetchedUsers: FirebaseUser[] = [];
         usersSnap.forEach((d) => {
-          fetchedUsers.push({ id: d.id, ...d.data() } as FirebaseUser);
+          const data = d.data();
+          console.log('DEBUG: User doc:', d.id, data);
+          fetchedUsers.push({ id: d.id, ...data } as FirebaseUser);
         });
+        
+        console.log('DEBUG: Final fetched users list length:', fetchedUsers.length);
         setUserList(fetchedUsers);
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -143,10 +159,7 @@ export default function AdminDashboard() {
         isVerificationPending: false,
         verificationStatus: !currentStatus ? 'approved' : 'none'
       });
-      // In a real database scenario, context syncs automatically or manually refetched.
-      // We also display an alert for visual feedback.
       alert(`Car verification set to: ${!currentStatus ? 'VERIFIED' : 'UNVERIFIED'}`);
-      window.location.reload(); // Quick refresh to update CarContext state
     } catch (error) {
       console.error('Error toggling car verification:', error);
     }
@@ -160,6 +173,7 @@ export default function AdminDashboard() {
         verificationStatus: 'approved'
       });
       alert('Verification request APPROVED! This vehicle has received its free verified badge.');
+      setPendingCars(prev => prev.filter(c => c.id !== carId));
       window.location.reload();
     } catch (error) {
       console.error('Error approving verification:', error);
@@ -172,24 +186,25 @@ export default function AdminDashboard() {
         verificationStatus: 'inspection_completed'
       });
       alert('Physical inspection status set to SUCCESSFUL/COMPLETED! Now you can grant the final Verified Badge.');
-      window.location.reload();
     } catch (error) {
       console.error('Error marking inspection completed:', error);
     }
   };
 
-  const handleRejectFreeVerification = async (carId: string) => {
-    if (!window.confirm('Are you sure you want to decline verification for this listing?')) return;
+  const handleDeleteVerificationRequest = async (carId: string) => {
+    if (!window.confirm('Are you sure you want to delete this verification request?')) return;
     try {
-      await updateDoc(doc(db, 'cars', carId), { 
+      const carRef = doc(db, 'cars', carId);
+      await updateDoc(carRef, { 
         isVerified: false,
         isVerificationPending: false,
         verificationStatus: 'rejected'
       });
-      alert('Verification request DECLINED.');
-      window.location.reload();
+      alert('Verification request DELETED.');
+      setProcessedCarIds(prev => new Set(prev).add(carId));
     } catch (error) {
-      console.error('Error rejecting verification:', error);
+      console.error('Error deleting verification:', error);
+      alert('Error deleting: ' + (error as Error).message);
     }
   };
 
@@ -200,7 +215,6 @@ export default function AdminDashboard() {
         status: !currentStatus ? 'Prime' : 'Standard'
       });
       alert(`Car Premium flag set to: ${!currentStatus ? 'PREMIUM (Prime)' : 'NORMAL'}`);
-      window.location.reload();
     } catch (error) {
       console.error('Error toggling car premium:', error);
     }
@@ -211,7 +225,6 @@ export default function AdminDashboard() {
     try {
       await deleteDoc(doc(db, 'cars', carId));
       alert('Listing successfully removed from Benim Cars.');
-      window.location.reload();
     } catch (error) {
       console.error('Error deleting car:', error);
     }
@@ -278,7 +291,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-6">
           <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
             <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mb-4">
-              <Car className="h-6 w-6" />
+              <LucideCar className="h-6 w-6" />
             </div>
             <div>
               <p className="text-3xl font-black text-slate-900">{totalCars}</p>
@@ -352,7 +365,7 @@ export default function AdminDashboard() {
               activeTab === 'listings' ? "border-primary-500 text-primary-500" : "border-transparent text-slate-400 hover:text-slate-600"
             )}
           >
-            <Car className="h-4 w-4" /> Vehicles Inventory ({totalCars})
+            <LucideCar className="h-4 w-4" /> Vehicles Inventory ({totalCars})
           </button>
           <button 
             onClick={() => setActiveTab('users')}
@@ -378,7 +391,7 @@ export default function AdminDashboard() {
         {activeTab === 'listings' && (
           <div className="space-y-6">
             {/* Special Section: Pending Pune Free Verification Requests */}
-            {cars.filter(car => car.isVerificationPending).length > 0 && (
+            {pendingCars.length > 0 && (
               <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[2.5rem] border border-amber-200 p-8 shadow-sm space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
@@ -393,7 +406,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {cars.filter(car => car.isVerificationPending).map((car) => (
+                  {pendingCars.map((car) => (
                     <div key={car.id} className="bg-white rounded-3xl border border-amber-200/50 overflow-hidden shadow-sm flex flex-col justify-between p-5 space-y-4 hover:shadow-md transition-all relative">
                       {/* Flag badges */}
                       <div className="absolute top-3 right-3 z-10">
@@ -469,10 +482,10 @@ export default function AdminDashboard() {
                           </button>
                         )}
                         <button 
-                          onClick={() => handleRejectFreeVerification(car.id)}
+                          onClick={() => handleDeleteVerificationRequest(car.id)}
                           className="w-full py-2 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-center transition-all border border-rose-100/40 cursor-pointer"
                         >
-                          Reject Request
+                          Delete Request
                         </button>
                       </div>
                     </div>

@@ -54,31 +54,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isAdminEmail = firebaseUser.email === 'adilnida778@gmail.com';
         const roleToAssign = isAdminEmail ? 'admin' : (intendedRole || 'buyer');
 
-        if (userDoc.exists()) {
-          const existingData = userDoc.data() as User;
-          if (isAdminEmail && existingData.role !== 'admin') {
-            const updatedData = { ...existingData, role: 'admin' as const };
-            await updateDoc(userRef, { role: 'admin' });
-            currentUser = updatedData;
-          } else if (intendedRole && existingData.role !== intendedRole && !isAdminEmail) {
-            const updatedData = { ...existingData, role: intendedRole };
-            await updateDoc(userRef, { role: intendedRole });
-            currentUser = updatedData;
+        try {
+          if (userDoc.exists()) {
+            const existingData = userDoc.data() as User;
+            if (isAdminEmail && existingData.role !== 'admin') {
+              const updatedData = { ...existingData, role: 'admin' as const };
+              await updateDoc(userRef, { role: 'admin' });
+              currentUser = updatedData;
+            } else if (intendedRole && existingData.role !== intendedRole && !isAdminEmail) {
+              const updatedData = { ...existingData, role: intendedRole };
+              await updateDoc(userRef, { role: intendedRole });
+              currentUser = updatedData;
+            } else {
+              currentUser = existingData;
+            }
           } else {
-            currentUser = existingData;
+            // Create user profile if doesn't exist
+            currentUser = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Member',
+              email: firebaseUser.email || '',
+              role: roleToAssign,
+              avatar: firebaseUser.photoURL || `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
+            };
+            await setDoc(userRef, currentUser);
           }
-        } else {
-          // Create user profile if doesn't exist
-          currentUser = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Member',
-            email: firebaseUser.email || '',
-            role: roleToAssign,
-            avatar: firebaseUser.photoURL || `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
-          };
-          await setDoc(userRef, currentUser);
+          setUser(currentUser);
+        } catch (error) {
+          console.error("User Sync Error:", error);
+          setUser(null);
         }
-        setUser(currentUser);
         intendedRole = null; // Clear after use
       } else {
         setUser(null);

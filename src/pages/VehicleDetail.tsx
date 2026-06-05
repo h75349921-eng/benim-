@@ -282,10 +282,11 @@ export default function VehicleDetail() {
             </div>
 
             {/* Quick Specs Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {[
                 { icon: Gauge, label: 'KM Driven', value: `${(car.kmDriven ?? car.mileage ?? 0).toLocaleString()} km` },
                 { icon: Calendar, label: 'Reg. Year', value: car.year },
+                { icon: MapPin, label: 'Reg. State', value: car.state || 'N/A' },
                 { icon: Fuel, label: 'Fuel Type', value: car.fuelType },
                 { icon: Settings2, label: 'Transmission', value: car.transmission },
               ].map((spec, i) => (

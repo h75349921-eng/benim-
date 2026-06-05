@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal, ChevronDown, Check, X, RotateCcw, MapPin, Navigation } from 'lucide-react';
+import { Search, SlidersHorizontal, ChevronDown, Check, X, RotateCcw, MapPin } from 'lucide-react';
 import { useCars } from '../context/CarContext';
 import ListingCard from '../components/ListingCard';
 import { FuelType, Transmission } from '../types';
@@ -64,24 +64,119 @@ export default function Browse() {
       const matchesBrand = !brandFilter || car.brand === brandFilter;
       const matchesOwners = !ownersFilter || car.ownerType === ownersFilter;
       const matchesVerified = !verifiedOnly || car.isVerified === true;
+      const isPrime = car.status === 'Prime' || car.isPremium === true;
+      const matchesOnlyPrime = sortBy !== 'only-prime' || isPrime;
       const matchesPrice = (car.price || 0) >= minPrice && (car.price || 0) <= maxPrice;
       const matchesKmDriven = (car.kmDriven || 0) <= maxKmDriven;
       const matchesYear = !yearFilter || (car.year || '').toString() === yearFilter;
       
       return matchesSearch && matchesFuel && matchesTrans && matchesPrice && matchesLoc && 
-             matchesBrand && matchesOwners && matchesVerified && matchesKmDriven && matchesYear;
+             matchesBrand && matchesOwners && matchesVerified && matchesOnlyPrime && matchesKmDriven && matchesYear;
     });
 
     // Sorting Logic
-    return results.sort((a, b) => {
+    const sorted = results.sort((a, b) => {
+      const aPrime = a.status === 'Prime' || a.isPremium === true;
+      const bPrime = b.status === 'Prime' || b.isPremium === true;
+      
       switch (sortBy) {
         case 'price-low': return a.price - b.price;
         case 'price-high': return b.price - a.price;
         case 'newest': return b.year - a.year;
         case 'oldest': return a.year - b.year;
         case 'premium':
-          if (a.isPremium && !b.isPremium) return -1;
-          if (!a.isPremium && b.isPremium) return 1;
+          const getSeconds = (ts: any) => {
+            if (!ts) return 0;
+            if (typeof ts.seconds === 'number') return ts.seconds;
+            if (ts instanceof Date) return ts.getTime() / 1000;
+            if (typeof ts === 'number') return ts / 1000;
+            const parsed = Date.parse(ts);
+            if (!isNaN(parsed)) return parsed / 1000;
+            return 0;
+          };
+
+          const getRawScore = (car: any) => {
+            let baseScore = 0;
+            const nowMs = Date.now();
+            const createdAtSeconds = getSeconds(car.createdAt);
+            const carTimeMs = createdAtSeconds * 1000;
+
+            const isPrime = car.status === 'Prime' || car.isPremium === true;
+            const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+            const isLatest = carTimeMs > 0 && (nowMs - carTimeMs) <= ONE_DAY_MS;
+            const isVerified = car.isVerified === true || car.status === 'Verified';
+
+            // Establish the robust requested tiered boundaries with additive scoring
+            if (isPrime) {
+              baseScore += 500000;
+            }
+            if (isLatest) {
+              baseScore += 300000;
+            }
+            if (isVerified) {
+              baseScore += 150000;
+            }
+
+            // Down-prioritize unverified, non-prime listings that are older than 3 days to keep them at the bottom
+            const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+            const isOldUnverifiedNonPrime = !isPrime && !isVerified && carTimeMs > 0 && (nowMs - carTimeMs) > THREE_DAYS_MS;
+            if (isOldUnverifiedNonPrime) {
+              baseScore -= 1000000;
+            }
+
+            // Calculate intra-tier quality bonus to make high-value listings bubble up within their tier
+            let qualityBonus = 0;
+
+            // Recency weighting within the tier (fresher listings bubble to top of their tier)
+            if (createdAtSeconds > 0) {
+              qualityBonus += (createdAtSeconds / 20000); 
+            }
+
+            // Premium start boost timestamp weighting
+            if (isPrime && car.boostStartDate) {
+              const parsed = Date.parse(car.boostStartDate);
+              if (!isNaN(parsed)) {
+                qualityBonus += (parsed / 20000000);
+              }
+            }
+
+            // Photos completeness (visual criteria)
+            if (car.images && car.images.length > 0) {
+              qualityBonus += 1000;
+              qualityBonus += Math.min(car.images.length, 5) * 200;
+            } else {
+              qualityBonus -= 2000; // Penalty for lack of photos
+            }
+
+            // Description length & detail quality
+            if (car.description) {
+              if (car.description.length > 150) {
+                qualityBonus += 500;
+              } else if (car.description.length > 50) {
+                qualityBonus += 250;
+              }
+            }
+
+            // Specifications completeness (engine, color, service history, etc)
+            if (car.specs) {
+              let specCount = 0;
+              if (car.specs.engine) specCount++;
+              if (car.specs.power || car.specs.maxPower) specCount++;
+              if (car.specs.color) specCount++;
+              if (car.specs.insuranceStatus) specCount++;
+              if (car.specs.serviceHistory) specCount++;
+              qualityBonus += specCount * 200;
+            }
+
+            return baseScore + qualityBonus;
+          };
+
+          return getRawScore(b) - getRawScore(a);
+        case 'prime-first':
+          if (aPrime && !bPrime) return -1;
+          if (!aPrime && bPrime) return 1;
+          return 0;
+        case 'only-prime':
           return 0;
         case 'verified':
           if (a.isVerified && !b.isVerified) return -1;
@@ -90,24 +185,51 @@ export default function Browse() {
         default: return 0;
       }
     });
+
+    if (sortBy === 'premium') {
+      const paid: any[] = [];
+      const organic: any[] = [];
+      for (const car of sorted) {
+        const isPrime = car.status === 'Prime' || car.isPremium === true;
+        if (isPrime) {
+          paid.push(car);
+        } else {
+          organic.push(car);
+        }
+      }
+
+      const interleaved: any[] = [];
+      let pIdx = 0;
+      let oIdx = 0;
+      while (pIdx < paid.length || oIdx < organic.length) {
+        if (pIdx < paid.length) {
+          interleaved.push(paid[pIdx]);
+          pIdx++;
+        }
+        for (let i = 0; i < 3; i++) {
+          if (oIdx < organic.length) {
+            interleaved.push(organic[oIdx]);
+            oIdx++;
+          }
+        }
+      }
+      return interleaved;
+    }
+
+    return sorted;
   }, [cars, query, fuelFilter, transFilter, minPrice, maxPrice, locationFilter, brandFilter, ownersFilter, verifiedOnly, maxKmDriven, yearFilter, sortBy]);
 
   if (isLoading) {
     return <div className="max-w-7xl mx-auto px-4 py-8 text-center font-black">Finding best deals...</div>;
   }
 
-  const handleGetCurrentLocation = () => {
-    // Mock getting location
-    updateFilters('loc', 'Mumbai');
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex flex-col lg:flex-row gap-8">
         
         {/* Sidebar Filter */}
-        <aside className="lg:w-72 flex-shrink-0">
-          <div className="sticky top-24 space-y-8">
+        <aside className="lg:w-72 flex-shrink-0 lg:h-[calc(100vh-6rem)] lg:sticky lg:top-24 lg:overflow-y-auto pr-2">
+          <div className="space-y-8">
             <div className="flex items-center justify-between lg:mb-0 mb-4">
               <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <SlidersHorizontal className="h-5 w-5 text-primary-500" /> Filters
@@ -206,12 +328,6 @@ export default function Browse() {
                   />
                   <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 </div>
-                <button 
-                  onClick={handleGetCurrentLocation}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-200 transition-colors"
-                >
-                  <Navigation className="h-3 w-3" /> Use Current Location
-                </button>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {LOCATIONS.slice(0, 5).map(loc => (
                     <button
@@ -233,12 +349,24 @@ export default function Browse() {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 block">Price Range</label>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                    <span className="text-[10px] text-slate-400 block font-bold">MIN</span>
-                    <span className="font-bold">₹{(minPrice / 100000).toFixed(1)}L</span>
+                    <span className="text-[10px] text-slate-400 block font-bold mb-1">MIN</span>
+                    <input
+                      type="number"
+                      value={minPrice}
+                      onChange={(e) => updateFilters('minPrice', e.target.value)}
+                      className="w-full font-bold text-sm bg-transparent outline-none"
+                      placeholder="0"
+                    />
                   </div>
                   <div className="p-3 bg-white border border-slate-200 rounded-xl">
-                    <span className="text-[10px] text-slate-400 block font-bold">MAX</span>
-                    <span className="font-bold">₹{(maxPrice / 100000).toFixed(1)}L</span>
+                    <span className="text-[10px] text-slate-400 block font-bold mb-1">MAX</span>
+                    <input
+                      type="number"
+                      value={maxPrice}
+                      onChange={(e) => updateFilters('maxPrice', e.target.value)}
+                      className="w-full font-bold text-sm bg-transparent outline-none"
+                      placeholder="50000000"
+                    />
                   </div>
                 </div>
                 <input
@@ -353,7 +481,9 @@ export default function Browse() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none cursor-pointer"
               >
-                <option value="premium">Premium First</option>
+                <option value="premium">Recommended (Smart Match)</option>
+                <option value="prime-first">Prime First</option>
+                <option value="only-prime">Only Prime</option>
                 <option value="verified">Verified First</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>

@@ -1,20 +1,39 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, HelpCircle, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 export default function ContactUs() {
   const [ticketSent, setTicketSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', reason: 'general', text: '' });
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.text) return;
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+
+    try {
+      await emailjs.send(
+        'service_bf3h5lw',
+        'template_vgwg0ib',
+        {
+          from_name: formData.name,
+          from_email: formData.email,
+          phone: formData.phone,
+          reason: formData.reason,
+          message: formData.text,
+        },
+        '1Ngumk8Q3ietcIvyO'
+      );
+      
       setTicketSent(true);
       setFormData({ name: '', email: '', phone: '', reason: 'general', text: '' });
-    }, 1200);
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      alert('Failed to send message. Please try again later.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -161,10 +180,11 @@ export default function ContactUs() {
                         onChange={(e) => setFormData({...formData, reason: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3.5 text-xs font-semibold text-slate-500 focus:ring-primary-500"
                       >
-                        <option value="general">General Marketplace Question</option>
-                        <option value="battery">Battery Inspection Consultation</option>
-                        <option value="dealer">Premium Dealer Verification</option>
-                        <option value="press">Press & Media Inquiries</option>
+                        <option value="selling">Selling my vehicle</option>
+                        <option value="buying">Buying / Car Viewing</option>
+                        <option value="dealer">Dealer Partnership</option>
+                        <option value="premium">Premium/Subscription Inquiry</option>
+                        <option value="general">General Marketplace Inquiry</option>
                       </select>
                     </div>
                   </div>

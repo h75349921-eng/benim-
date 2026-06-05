@@ -20,48 +20,108 @@ export default function Careers() {
 
   const jobs: Job[] = [
     {
-      id: "hybrid-battery-eng",
-      title: "Senior Hybrid Battery Diagnostics Engineer",
+      id: "car-inspection-expert",
+      title: "Senior Car Inspection Expert",
       department: "Automotive Assessment & Quality",
-      location: "Pune, Maharashtra (On-site)",
+      location: "Pune, Maharashtra",
       type: "Full-Time",
-      salary: "₹18,00,000 - ₹24,00,000 / year",
-      description: "We are seeking an expert who understands high-voltage battery architecture, cell chemical degradation, state-of-charge calculation, and regenerative motor parameters to lead our diagnostic inspection services.",
+      salary: "₹10,00,000 - ₹15,00,000 / year",
+      description: "Perform comprehensive vehicle inspections, assessing structural integrity, engine performance, and accident history for our buyers.",
       responsibilities: [
-        "Evaluate battery pack health across Prius, Accord, Camry Hybrid, and luxury EV entries.",
-        "Refine battery degradation algorithms used to calculate car 'Health Badges' on the platform.",
-        "Train field technicians on safe high-voltage inspection parameters and procedures.",
-        "Collaborate with software engineers to feed Diagnostic API reports directly into marketplace listing data."
+        "Conduct thorough 200+ point vehicle inspections.",
+        "Generate detailed inspection reports with high-quality photographic documentation.",
+        "Provide honest, objective feedback to potential buyers regarding vehicle condition.",
+        "Keep up-to-date with automotive diagnostic tools and industry standards."
       ]
     },
     {
       id: "full-stack-dev",
-      title: "Full-Stack Engineer - React / Express",
+      title: "Full-Stack Engineer (FSD)",
       department: "Engineering & Digital Product",
       location: "Pune, Maharashtra (Hybrid) / Remote",
       type: "Full-Time",
-      salary: "₹14,0,000 - ₹22,00,000 / year",
+      salary: "₹14,00,000 - ₹22,00,000 / year",
       description: "Help build the ultimate digital hybrid vehicle portal. You will construct highly interactive React SPAs, live booking systems, real-time messaging, and high-performance server integrations in Node.js.",
       responsibilities: [
         "Develop beautifully crafted, high-performance web experiences using React and Tailwind CSS.",
         "Refine Express API endpoints, image optimization grids, and Firestore query security policies.",
         "Incorporate third-party financial interfaces and OAuth single sign-on mechanisms.",
-        "Ensure lightning-fast mobile rendering and optimize loading parameters for slow internet zones."
+        "Ensure lightning-fast mobile rendering and optimize loading parameters."
       ]
     },
     {
-      id: "hybrid-sales-expert",
-      title: "Automotive Hybrid Concierge",
-      department: "Customer Relations & Advisory",
+      id: "business-analyst",
+      title: "Business Analyst",
+      department: "Marketplace Strategy",
+      location: "Pune, Maharashtra",
+      type: "Full-Time",
+      salary: "₹12,00,000 - ₹18,00,000 / year",
+      description: "Analyze marketplace data, buyer trends, and dealer performance to optimize our platform's growth and listing visibility.",
+      responsibilities: [
+        "Model market trends to optimize listing exposure and category prioritization.",
+        "Analyze user behavior to improve browsing engagement and search efficiency.",
+        "Collaborate with marketing teams to refine acquisition and retention tactics.",
+        "Present data-driven insights to leadership to shape product initiatives."
+      ]
+    },
+    {
+      id: "customer-care-lead",
+      title: "Customer Success / Care Lead",
+      department: "Customer Relations",
       location: "Pune, NIBM Road Office",
       type: "Full-Time",
-      salary: "₹8,00,000 - ₹12,00,000 / year",
-      description: "Directly advise premier buyers looking to transition into hybrid technology. You will serve as an objective tech expert assisting buyers on which electric powertrain matches their commute pattern.",
+      salary: "₹6,00,000 - ₹9,00,000 / year",
+      description: "Serve as the primary point of contact for buyers and sellers, resolving inquiries and ensuring a seamless experience on our platform.",
       responsibilities: [
-        "Respond to premium buyers inquiring about Toyota, Honda, and Lexus hybrid powertrains.",
-        "Guide buyers on state tax benefits, premium buyer registration processes, and charger setups.",
-        "Build deep, lasting, trustworthy relationships with regional premium dealerships.",
-        "Actively manage active inquiries CRM board to facilitate optimal user deal-closures."
+        "Manage end-to-end customer support through tickets, chat, and phone.",
+        "Proactively resolve marketplace issues for both buyers and sellers.",
+        "Coordinate with internal teams (inspection/sales) to resolve complex queries.",
+        "Build long-term trust and rapport with our user community."
+      ]
+    },
+    {
+      id: "dealer-fulfillment-driver",
+      title: "Dealer Operations Driver",
+      department: "Logistics",
+      location: "Pune, Maharashtra",
+      type: "Contract / Full-Time",
+      salary: "₹4,00,000 - ₹6,00,000 / year",
+      description: "Provide professional vehicle pick-up and drop-off services for dealer inventory, ensuring vehicles reach inspection centers or buyer locations on time.",
+      responsibilities: [
+        "Transport dealer vehicles across designated city locations.",
+        "Conduct quick vehicle condition checks during pick-up and drop-off.",
+        "Maintain high standards of professionalism during customer interactions.",
+        "Adhere to strict timelines and safety protocols during transportation."
+      ]
+    },
+    {
+      id: "content-listing-specialist",
+      title: "Automotive Content & Listing Specialist",
+      department: "Marketing & Operations",
+      location: "Pune, Maharashtra",
+      type: "Full-Time",
+      salary: "₹5,00,000 - ₹8,00,000 / year",
+      description: "Manage and optimize car listings to ensure accurate, attractive, and search-friendly representation on our platform.",
+      responsibilities: [
+        "Review and approve incoming car listings for quality and accuracy.",
+        "Write engaging descriptions for premium vehicle listings.",
+        "Ensure photographic assets meet platform quality guidelines.",
+        "Coordinate with sellers to gather missing vehicle information."
+      ]
+    },
+    {
+      id: "dealer-partnerships-manager",
+      title: "Dealer Partnerships Manager",
+      department: "Dealer Relations",
+      location: "Pune, Maharashtra",
+      type: "Full-Time",
+      salary: "₹15,00,000 - ₹25,00,000 / year",
+      description: "Build and maintain strong relationships with premium car dealers to expand our inventory and partnership ecosystem.",
+      responsibilities: [
+        "Acquire and onboard new dealership partners onto our platform.",
+        "Manage dealer accounts to ensure high listing quality and performance.",
+        "Develop strategies to increase inventory volume from partner dealers.",
+        "Represent the company at automotive trade events and dealer meetups."
       ]
     }
   ];
